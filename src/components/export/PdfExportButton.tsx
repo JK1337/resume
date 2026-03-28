@@ -3,60 +3,112 @@ import { jsPDF } from "jspdf";
 import type { RefObject } from "react";
 import { useCallback, useState } from "react";
 
-const GAP_MM = 2;
+/** ~20 CSS px at 96dpi → mm (minimum top margin on every PDF page). */
+const TOP_MARGIN_MM = (20 * 25.4) / 96;
+
+/**
+ * Small gap between stacked blocks (mm). Keep small to avoid white bands that
+ * look like they overlap or split text.
+ */
+const GAP_MM = 0.5;
+
+/** Tolerance for float / raster rounding so we do not clip or double-place content. */
+const FIT_EPSILON_MM = 0.35;
 
 interface PdfExportButtonProps {
   targetRef: RefObject<HTMLDivElement | null>;
 }
 
-/** Draw one rasterized block on the PDF, starting at `yMm`. Returns the Y position after this block (bottom edge + optional gap). */
+function innerPageHeight(pageH: number): number {
+  return pageH - TOP_MARGIN_MM;
+}
+
+function normalizeModulo(value: number, modulus: number): number {
+  let m = value % modulus;
+  if (m < 0) m += modulus;
+  if (m < FIT_EPSILON_MM) return 0;
+  if (modulus - m < FIT_EPSILON_MM) return 0;
+  return m;
+}
+
+/**
+ * Draw one rasterized block. `yContentMm` is the vertical offset inside the
+ * content area (below {@link TOP_MARGIN_MM}), 0 … innerPageHeight.
+ * Returns the content-space Y after this block (bottom edge), or `innerH` when
+ * the last stripe filled the content area exactly.
+ */
 function appendBlockToPdf(
   pdf: jsPDF,
   canvas: HTMLCanvasElement,
   pageW: number,
   pageH: number,
-  yMm: number,
+  yContentMm: number,
   addGapBefore: boolean
 ): number {
+  const innerH = innerPageHeight(pageH);
   const imgData = canvas.toDataURL("image/png");
   const imgWidthMm = pageW;
   const imgHeightMm = (canvas.height * imgWidthMm) / canvas.width;
 
-  let y = yMm;
-  if (addGapBefore && y > 0) {
+  let y = yContentMm;
+  if (y >= innerH - FIT_EPSILON_MM) {
+    pdf.addPage();
+    y = 0;
+  } else if (addGapBefore && y > 0) {
     y += GAP_MM;
   }
 
-  const availableOnPage = pageH - y;
+  const availableOnPage = innerH - y;
+  const drawY = TOP_MARGIN_MM + y;
 
-  // Fits on current page
-  if (imgHeightMm <= availableOnPage + 0.5) {
-    pdf.addImage(imgData, "PNG", 0, y, imgWidthMm, imgHeightMm);
+  if (imgHeightMm <= availableOnPage - FIT_EPSILON_MM) {
+    pdf.addImage(imgData, "PNG", 0, drawY, imgWidthMm, imgHeightMm);
     return y + imgHeightMm;
   }
 
-  // Start on a fresh page if there is not enough room and we're not at top
-  if (y > 0.5) {
+  if (y > FIT_EPSILON_MM) {
     pdf.addPage();
-    y = 0;
-    return appendBlockToPdf(pdf, canvas, pageW, pageH, y, false);
+    return appendBlockToPdf(pdf, canvas, pageW, pageH, 0, false);
   }
 
-  // Block taller than one page: tile vertically (same approach as full-page slice)
   let heightLeft = imgHeightMm;
-  let position = 0;
+  let yImg = TOP_MARGIN_MM;
 
-  pdf.addImage(imgData, "PNG", 0, position, imgWidthMm, imgHeightMm);
-  heightLeft -= pageH;
+  pdf.addImage(imgData, "PNG", 0, yImg, imgWidthMm, imgHeightMm);
+  heightLeft -= innerH;
 
-  while (heightLeft > 0) {
-    position -= pageH;
+  while (heightLeft > FIT_EPSILON_MM) {
+    yImg -= innerH;
     pdf.addPage();
-    pdf.addImage(imgData, "PNG", 0, position, imgWidthMm, imgHeightMm);
-    heightLeft -= pageH;
+    pdf.addImage(imgData, "PNG", 0, yImg, imgWidthMm, imgHeightMm);
+    heightLeft -= innerH;
   }
 
-  return 0;
+  const remainder = normalizeModulo(imgHeightMm, innerH);
+  return remainder === 0 ? innerH : remainder;
+}
+
+/** Full-document capture: tile using the same top margin and content height. */
+function addTiledImageToPdf(
+  pdf: jsPDF,
+  imgData: string,
+  pageW: number,
+  pageH: number,
+  imgHeightMm: number
+): void {
+  const innerH = innerPageHeight(pageH);
+  let heightLeft = imgHeightMm;
+  let yImg = TOP_MARGIN_MM;
+
+  pdf.addImage(imgData, "PNG", 0, yImg, pageW, imgHeightMm);
+  heightLeft -= innerH;
+
+  while (heightLeft > FIT_EPSILON_MM) {
+    yImg -= innerH;
+    pdf.addPage();
+    pdf.addImage(imgData, "PNG", 0, yImg, pageW, imgHeightMm);
+    heightLeft -= innerH;
+  }
 }
 
 export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
@@ -92,17 +144,8 @@ export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
           backgroundColor: "#ffffff",
         });
         const imgData = canvas.toDataURL("image/png");
-        const imgHeight = (canvas.height * pageW) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-        pdf.addImage(imgData, "PNG", 0, position, pageW, imgHeight);
-        heightLeft -= pageH;
-        while (heightLeft > 0) {
-          position -= pageH;
-          pdf.addPage();
-          pdf.addImage(imgData, "PNG", 0, position, pageW, imgHeight);
-          heightLeft -= pageH;
-        }
+        const imgHeightMm = (canvas.height * pageW) / canvas.width;
+        addTiledImageToPdf(pdf, imgData, pageW, pageH, imgHeightMm);
         pdf.save("resume.pdf");
         return;
       }
@@ -117,7 +160,14 @@ export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
           backgroundColor: "#ffffff",
         });
         const addGap = i > 0;
-        yCursor = appendBlockToPdf(pdf, canvas, pageW, pageH, yCursor, addGap);
+        yCursor = appendBlockToPdf(
+          pdf,
+          canvas,
+          pageW,
+          pageH,
+          yCursor,
+          addGap
+        );
       }
 
       pdf.save("resume.pdf");

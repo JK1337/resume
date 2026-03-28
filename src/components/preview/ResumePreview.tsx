@@ -28,7 +28,7 @@ export const ResumePreview = forwardRef<HTMLDivElement>(function ResumePreview(
           ...t.paperInline,
         }}
       >
-        <header className={t.header}>
+        <header className={t.header} data-pdf-block>
           <h1 className={t.name}>{basicInfo.fullName || "Your name"}</h1>
           {basicInfo.headline ? (
             <p className={t.headline}>{basicInfo.headline}</p>
@@ -41,7 +41,7 @@ export const ResumePreview = forwardRef<HTMLDivElement>(function ResumePreview(
         </header>
 
         {basicInfo.summary ? (
-          <section className="mt-4">
+          <section className="mt-4" data-pdf-block>
             <h2 className={t.sectionTitle}>Summary</h2>
             <p className={t.summaryText}>{basicInfo.summary}</p>
           </section>
@@ -56,10 +56,12 @@ export const ResumePreview = forwardRef<HTMLDivElement>(function ResumePreview(
             w.endDate
         ) ? (
           <section className="mt-5">
-            <h2 className={t.sectionTitle}>Experience</h2>
             <ul className="space-y-4">
-              {workExperience.map((job) => (
-                <li key={job.id}>
+              {workExperience.map((job, idx) => (
+                <li key={job.id} data-pdf-block>
+                  {idx === 0 ? (
+                    <h2 className={`${t.sectionTitle} mb-2`}>Experience</h2>
+                  ) : null}
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <div>
                       <span className={t.jobTitle}>{job.title || "Role"}</span>
@@ -101,10 +103,12 @@ export const ResumePreview = forwardRef<HTMLDivElement>(function ResumePreview(
             e.endDate
         ) ? (
           <section className="mt-5">
-            <h2 className={t.sectionTitle}>Education</h2>
             <ul className="space-y-3">
-              {education.map((edu) => (
-                <li key={edu.id}>
+              {education.map((edu, idx) => (
+                <li key={edu.id} data-pdf-block>
+                  {idx === 0 ? (
+                    <h2 className={`${t.sectionTitle} mb-2`}>Education</h2>
+                  ) : null}
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <div>
                       <span className={t.eduInst}>
@@ -130,7 +134,7 @@ export const ResumePreview = forwardRef<HTMLDivElement>(function ResumePreview(
         ) : null}
 
         {skills.some((s) => s.name.trim()) ? (
-          <section className="mt-5">
+          <section className="mt-5" data-pdf-block>
             <h2 className={t.sectionTitle}>Skills</h2>
             <div className="space-y-3">
               {skillGroups.map(([category, names]) => (
