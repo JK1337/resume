@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { TopMenubar } from "./components/layout/TopMenubar";
-import { AccountPage } from "./pages/AccountPage";
+import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MyResumePage } from "./pages/MyResumePage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
@@ -35,10 +35,18 @@ export default function App() {
                 />
               }
             />
-            <Route path="/my-resume" element={<MyResumePage />} />
+            <Route path="/resume" element={<MyResumePage />} />
+            <Route
+              path="/my-resume"
+              element={<Navigate to="/resume" replace />}
+            />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/sign-up" element={<SignUpPage />} />
-            <Route path="/account" element={<AccountPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route
+              path="/account"
+              element={<Navigate to="/dashboard" replace />}
+            />
             <Route
               path="*"
               element={<Navigate to="/browse-roles" replace />}

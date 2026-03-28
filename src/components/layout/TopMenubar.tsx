@@ -47,21 +47,21 @@ export function TopMenubar() {
             Play to Learn
           </NavLink>
           <NavLink
-            to="/my-resume"
+            to="/resume"
             className={({ isActive }) =>
               `${navClass} ${isActive ? navActiveClass : ""}`
             }
           >
-            My Resume
+            Resume
           </NavLink>
           {session ? (
             <NavLink
-              to="/account"
+              to="/dashboard"
               className={({ isActive }) =>
                 `${navClass} ${isActive ? navActiveClass : ""}`
               }
             >
-              Account
+              Dashboard
             </NavLink>
           ) : (
             <NavLink

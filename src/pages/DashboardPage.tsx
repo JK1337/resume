@@ -1,7 +1,7 @@
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 
-export function AccountPage() {
+export function DashboardPage() {
   const session = useAuthStore((s) => s.session);
   const logOut = useAuthStore((s) => s.logOut);
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ export function AccountPage() {
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-slate-50 px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900">
-          Account
+          Dashboard
         </h1>
         <p className="mt-4 text-sm text-slate-600">
           Signed in as{" "}

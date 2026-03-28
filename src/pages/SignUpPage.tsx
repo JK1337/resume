@@ -16,7 +16,7 @@ export function SignUpPage() {
   const [error, setError] = useState<string | null>(null);
 
   if (session) {
-    return <Navigate to="/browse-roles" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   function handleSubmit(e: FormEvent) {
@@ -39,7 +39,7 @@ export function SignUpPage() {
       setError("An account with this email already exists. Try logging in.");
       return;
     }
-    navigate("/browse-roles", { replace: true });
+    navigate("/dashboard", { replace: true });
   }
 
   return (

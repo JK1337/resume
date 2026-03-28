@@ -13,7 +13,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   if (session) {
-    return <Navigate to="/browse-roles" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   function handleSubmit(e: FormEvent) {
@@ -21,7 +21,7 @@ export function LoginPage() {
     setError(null);
     const result = logIn(email, password);
     if (result === "ok") {
-      navigate("/browse-roles", { replace: true });
+      navigate("/dashboard", { replace: true });
       return;
     }
     if (result === "no_account") {
