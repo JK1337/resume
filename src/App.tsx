@@ -3,7 +3,8 @@ import { TopMenubar } from "./components/layout/TopMenubar";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MyResumePage } from "./pages/MyResumePage";
-import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { BrowseJobsPage } from "./pages/BrowseJobsPage";
+import { PlayToLearnPage } from "./pages/PlayToLearnPage";
 import { SignUpPage } from "./pages/SignUpPage";
 
 export default function App() {
@@ -15,26 +16,14 @@ export default function App() {
           <Routes>
             <Route
               path="/"
-              element={<Navigate to="/browse-roles" replace />}
+              element={<Navigate to="/browse-jobs" replace />}
             />
+            <Route path="/browse-jobs" element={<BrowseJobsPage />} />
             <Route
               path="/browse-roles"
-              element={
-                <PlaceholderPage
-                  title="Browse Roles"
-                  description="Explore roles that match your skills. Find a dream job for you."
-                />
-              }
+              element={<Navigate to="/browse-jobs" replace />}
             />
-            <Route
-              path="/play-to-learn"
-              element={
-                <PlaceholderPage
-                  title="Play to Learn"
-                  description="Practice and learn in a playful way.  Earn your credits to use your tools."
-                />
-              }
-            />
+            <Route path="/play-to-learn" element={<PlayToLearnPage />} />
             <Route path="/resume" element={<MyResumePage />} />
             <Route
               path="/my-resume"
@@ -49,7 +38,7 @@ export default function App() {
             />
             <Route
               path="*"
-              element={<Navigate to="/browse-roles" replace />}
+              element={<Navigate to="/browse-jobs" replace />}
             />
           </Routes>
         </main>

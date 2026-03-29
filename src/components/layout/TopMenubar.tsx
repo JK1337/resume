@@ -13,7 +13,7 @@ export function TopMenubar() {
     <header className="z-20 shrink-0 border-b border-slate-200 bg-white shadow-sm">
       <div className="mx-auto flex h-14 max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6">
         <NavLink
-          to="/browse-roles"
+          to="/browse-jobs"
           className="flex shrink-0 items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 rounded"
           aria-label="Q me home"
         >
@@ -31,12 +31,12 @@ export function TopMenubar() {
           aria-label="Main"
         >
           <NavLink
-            to="/browse-roles"
+            to="/browse-jobs"
             className={({ isActive }) =>
               `${navClass} ${isActive ? navActiveClass : ""}`
             }
           >
-            Browse Roles
+            Browse Jobs
           </NavLink>
           <NavLink
             to="/play-to-learn"
