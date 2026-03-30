@@ -28,7 +28,7 @@ const GAP_MM = 1;
 const SECTION_GAP_MM = 6;
 
 /** Float tolerance for height math. */
-const FIT_EPSILON_MM = 0.4;
+const FIT_EPSILON_MM = 2;
 
 /**
  * Extra slack required vs. “available” height before we treat a block as
