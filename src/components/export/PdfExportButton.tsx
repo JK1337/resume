@@ -22,7 +22,7 @@ const BOTTOM_MARGIN_MM = 7;
 const SIDE_MARGIN_MM = 19.5;
 
 /** Space between items inside the same section (e.g. jobs, schools). */
-const GAP_MM = 2;
+const GAP_MM = 0.5;
 
 /** Extra space above each major section heading (Summary, Experience, …). */
 const SECTION_GAP_MM = 6;
