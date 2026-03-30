@@ -22,19 +22,19 @@ const BOTTOM_MARGIN_MM = 9;
 const SIDE_MARGIN_MM = 19.5;
 
 /** Space between items inside the same section (e.g. jobs, schools). */
-const GAP_MM = 1;
+const GAP_MM = 2;
 
 /** Extra space above each major section heading (Summary, Experience, …). */
 const SECTION_GAP_MM = 6;
 
 /** Float tolerance for height math. */
-const FIT_EPSILON_MM = 2;
+const FIT_EPSILON_MM = 0.35;
 
 /**
  * Extra slack required vs. “available” height before we treat a block as
  * fitting on the current page (reduces bottom clipping from rounding).
  */
-const BLOCK_FIT_BUFFER_MM = 6;
+const BLOCK_FIT_BUFFER_MM = 8;
 
 const RASTER_SCALE = 1.25;
 const JPEG_QUALITY = 0.78;
