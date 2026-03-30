@@ -2,10 +2,13 @@ import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import type { RefObject } from "react";
 import { useCallback, useState } from "react";
+import type { ResumeStyleId } from "../../constants/resumeStyles";
+import { useResumeStore } from "../../store/resumeStore";
 
 /**
  * Top inset on each PDF page (mm). Balances print-safe headroom vs blank bands
- * above continuation slices in multi-block export.
+ * above continuation slices in multi-block export. Executive uses 0 during export
+ * only (see `effectiveTopMarginMmForPdf`).
  */
 const TOP_MARGIN_MM = 12;
 
@@ -50,8 +53,12 @@ interface PdfExportButtonProps {
   targetRef: RefObject<HTMLDivElement | null>;
 }
 
-function innerPageHeight(pageH: number): number {
-  return pageH - TOP_MARGIN_MM - BOTTOM_MARGIN_MM;
+function effectiveTopMarginMmForPdf(previewStyle: ResumeStyleId): number {
+  return previewStyle === "executive" ? 0 : TOP_MARGIN_MM;
+}
+
+function innerPageHeight(pageH: number, topMarginMm: number): number {
+  return pageH - topMarginMm - BOTTOM_MARGIN_MM;
 }
 
 function normalizeModulo(value: number, modulus: number): number {
@@ -121,11 +128,12 @@ function addTiledJpegToPdf(
   pageH: number,
   xMm: number,
   wMm: number,
-  imgHeightMm: number
+  imgHeightMm: number,
+  topMarginMm: number
 ): void {
-  const innerH = innerPageHeight(pageH);
+  const innerH = innerPageHeight(pageH, topMarginMm);
   let heightLeft = imgHeightMm;
-  let yImg = TOP_MARGIN_MM;
+  let yImg = topMarginMm;
 
   addImageSlice(pdf, imgData, xMm, wMm, yImg, imgHeightMm);
   heightLeft -= innerH;
@@ -150,9 +158,10 @@ function appendBlockToPdf(
   pageH: number,
   sideMm: number,
   yContentMm: number,
-  gapBeforeMm: number
+  gapBeforeMm: number,
+  topMarginMm: number
 ): number {
-  const innerH = innerPageHeight(pageH);
+  const innerH = innerPageHeight(pageH, topMarginMm);
 
   let y = yContentMm;
   if (y >= innerH - FIT_EPSILON_MM) {
@@ -163,7 +172,7 @@ function appendBlockToPdf(
   }
 
   const availableOnPage = innerH - y;
-  const drawY = TOP_MARGIN_MM + y;
+  const drawY = topMarginMm + y;
   const slack =
     FIT_EPSILON_MM + BLOCK_FIT_BUFFER_MM;
 
@@ -182,12 +191,13 @@ function appendBlockToPdf(
       pageH,
       sideMm,
       0,
-      0
+      0,
+      topMarginMm
     );
   }
 
   let heightLeft = imgHeightMm;
-  let yImg = TOP_MARGIN_MM;
+  let yImg = topMarginMm;
 
   addImageSlice(pdf, imgData, sideMm, contentWmm, yImg, imgHeightMm);
   heightLeft -= innerH;
@@ -206,6 +216,7 @@ function appendBlockToPdf(
 export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const previewStyle = useResumeStore((s) => s.previewStyle);
 
   const exportPdf = useCallback(async () => {
     const root = targetRef.current;
@@ -215,6 +226,7 @@ export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
     }
     setError(null);
     setLoading(true);
+    const topMarginMm = effectiveTopMarginMmForPdf(previewStyle);
     try {
       const pdf = new jsPDF({
         orientation: "portrait",
@@ -246,7 +258,15 @@ export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
           const canvas = await html2canvas(root, html2canvasOpts);
           const imgData = canvasToJpegDataUrl(canvas);
           const imgHeightMm = (canvas.height * pageW) / canvas.width;
-          addTiledJpegToPdf(pdf, imgData, pageH, 0, pageW, imgHeightMm);
+          addTiledJpegToPdf(
+            pdf,
+            imgData,
+            pageH,
+            0,
+            pageW,
+            imgHeightMm,
+            topMarginMm
+          );
         } else {
           let yCursor = 0;
           for (let i = 0; i < blocks.length; i++) {
@@ -267,7 +287,8 @@ export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
               pageH,
               SIDE_MARGIN_MM,
               yCursor,
-              gapBefore
+              gapBefore,
+              topMarginMm
             );
           }
         }
@@ -282,7 +303,7 @@ export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
     } finally {
       setLoading(false);
     }
-  }, [targetRef]);
+  }, [targetRef, previewStyle]);
 
   return (
     <div className="flex flex-wrap items-center gap-3">
