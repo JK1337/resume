@@ -7,3 +7,14 @@
 body {
   @apply min-h-screen antialiased bg-slate-950 text-slate-100;
 }
+
+/*
+ * Explicit page margins for browser Print / Save as PDF.
+ * html2canvas + jsPDF ignore @page; export margins are set in PdfExportButton
+ * (SIDE_MARGIN_MM) — slightly wider than the preview padding so print/export
+ * matches PdfExportButton insets.
+ */
+@page {
+  size: A4 portrait;
+  margin: 20mm;
+}

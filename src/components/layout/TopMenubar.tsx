@@ -52,7 +52,7 @@ export function TopMenubar() {
               `${navClass} ${isActive ? navActiveClass : ""}`
             }
           >
-            Resume
+            My Resume
           </NavLink>
           {session ? (
             <NavLink

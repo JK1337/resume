@@ -34,6 +34,54 @@ function formatMinutes(m: number): string {
 
 function DarkCourseRow({ course, variant }: { course: Course; variant: "active" | "done" }) {
   const isDone = variant === "done";
+
+  const metaRow = (
+    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-400">
+      <span>{course.focus}</span>
+      <span>·</span>
+      <span>{formatMinutes(course.minutes)}</span>
+      {!isDone && course.progressPercent != null ? (
+        <>
+          <span>·</span>
+          <span className="text-violet-200/90">
+            {course.progressPercent}% complete
+          </span>
+        </>
+      ) : null}
+      {isDone ? (
+        <>
+          <span>·</span>
+          <span className="font-medium text-emerald-300/90">
+            +{course.creditsReward} credits
+          </span>
+        </>
+      ) : (
+        <>
+          <span>·</span>
+          <span className="text-slate-500">
+            up to {course.creditsReward} credits
+          </span>
+        </>
+      )}
+    </div>
+  );
+
+  const progressBar =
+    !isDone && course.progressPercent != null ? (
+      <div
+        className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800"
+        role="progressbar"
+        aria-valuenow={course.progressPercent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500"
+          style={{ width: `${course.progressPercent}%` }}
+        />
+      </div>
+    ) : null;
+
   return (
     <li className="flex gap-3 rounded-lg border border-white/10 bg-slate-900/60 px-3 py-3">
       <div
@@ -46,51 +94,34 @@ function DarkCourseRow({ course, variant }: { course: Course; variant: "active" 
         <BookIcon className="h-6 w-6" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-display text-sm font-semibold text-white">
-          {course.title}
-        </p>
-        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-400">
-          <span>{course.focus}</span>
-          <span>·</span>
-          <span>{formatMinutes(course.minutes)}</span>
-          {!isDone && course.progressPercent != null ? (
-            <>
-              <span>·</span>
-              <span className="text-violet-200/90">
-                {course.progressPercent}% complete
-              </span>
-            </>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="min-w-0 flex-1 font-display text-sm font-semibold text-white">
+            {course.title}
+          </p>
+          {!isDone ? (
+            <button
+              type="button"
+              className="shrink-0 rounded-lg border border-fuchsia-400/45 bg-gradient-to-r from-fuchsia-600/35 to-violet-600/35 px-2.5 py-1 text-xs font-semibold text-violet-100 shadow-sm transition hover:from-fuchsia-500/45 hover:to-violet-500/45 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/70 focus:ring-offset-2 focus:ring-offset-slate-950"
+              aria-label={`Open ${course.title}`}
+              onClick={(e) => {
+                e.currentTarget
+                  .closest("li")
+                  ?.querySelector("[data-in-progress-detail]")
+                  ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              }}
+            >
+              Open
+            </button>
           ) : null}
-          {isDone ? (
-            <>
-              <span>·</span>
-              <span className="font-medium text-emerald-300/90">
-                +{course.creditsReward} credits
-              </span>
-            </>
-          ) : (
-            <>
-              <span>·</span>
-              <span className="text-slate-500">
-                up to {course.creditsReward} credits
-              </span>
-            </>
-          )}
         </div>
-        {!isDone && course.progressPercent != null ? (
-          <div
-            className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800"
-            role="progressbar"
-            aria-valuenow={course.progressPercent}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          >
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500"
-              style={{ width: `${course.progressPercent}%` }}
-            />
+        {isDone ? (
+          metaRow
+        ) : (
+          <div data-in-progress-detail>
+            {metaRow}
+            {progressBar}
           </div>
-        ) : null}
+        )}
       </div>
     </li>
   );
@@ -202,7 +233,7 @@ export function PlayToLearnPage() {
       <div className="bg-slate-100">
         <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
           <h2 className="font-display text-lg font-semibold text-slate-900">
-            Courses you haven’t opened yet
+            Available Courses
           </h2>
           <p className="mt-1 text-sm text-slate-600">
             Pick a module to begin. Time estimates and credit rewards apply when
@@ -215,10 +246,28 @@ export function PlayToLearnPage() {
                 <li key={course.id}>
                   <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/60">
                     <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-display text-lg font-semibold text-slate-900">
-                          {course.title}
-                        </h3>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                          <h3 className="font-display text-lg font-semibold text-slate-900">
+                            {course.title}
+                          </h3>
+                          <button
+                            type="button"
+                            className="shrink-0 rounded-lg bg-violet-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+                            aria-label={`Open ${course.title}`}
+                            onClick={(e) => {
+                              e.currentTarget
+                                .closest("article")
+                                ?.querySelector("[data-course-description]")
+                                ?.scrollIntoView({
+                                  behavior: "smooth",
+                                  block: "start",
+                                });
+                            }}
+                          >
+                            Open
+                          </button>
+                        </div>
                         <p className="mt-0.5 text-sm font-medium text-violet-800">
                           {course.focus}
                         </p>
@@ -249,7 +298,10 @@ export function PlayToLearnPage() {
                         </span>
                       </span>
                     </div>
-                    <div className="mt-4 border-t border-slate-100 pt-4">
+                    <div
+                      className="mt-4 border-t border-slate-100 pt-4"
+                      data-course-description
+                    >
                       <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Description
                       </h4>
