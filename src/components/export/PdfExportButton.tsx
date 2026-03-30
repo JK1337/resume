@@ -13,7 +13,7 @@ const TOP_MARGIN_MM = 12;
  * Bottom inset so the last band of each page is not flush to the sheet edge
  * (avoids raster / JPEG clipping that showed as cut-off rows).
  */
-const BOTTOM_MARGIN_MM = 9;
+const BOTTOM_MARGIN_MM = 7;
 
 /**
  * Horizontal inset when placing each block raster — aligned with resume paper
