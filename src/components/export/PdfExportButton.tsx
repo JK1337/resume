@@ -25,10 +25,10 @@ const SIDE_MARGIN_MM = 19.5;
 const GAP_MM = 1;
 
 /** Extra space above each major section heading (Summary, Experience, …). */
-const SECTION_GAP_MM = 5;
+const SECTION_GAP_MM = 6;
 
 /** Float tolerance for height math. */
-const FIT_EPSILON_MM = 0.35;
+const FIT_EPSILON_MM = 0.4;
 
 /**
  * Extra slack required vs. “available” height before we treat a block as
