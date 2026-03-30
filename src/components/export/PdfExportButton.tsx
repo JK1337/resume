@@ -4,10 +4,10 @@ import type { RefObject } from "react";
 import { useCallback, useState } from "react";
 
 /**
- * Top inset on each PDF page (mm). Kept at 0 so multi-block export does not
- * stack blank bands above every block / continuation slice.
+ * Top inset on each PDF page (mm). Balances print-safe headroom vs blank bands
+ * above continuation slices in multi-block export.
  */
-const TOP_MARGIN_MM = 2;
+const TOP_MARGIN_MM = 6;
 
 /**
  * Bottom inset so the last band of each page is not flush to the sheet edge
