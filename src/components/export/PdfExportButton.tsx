@@ -7,7 +7,7 @@ import { useCallback, useState } from "react";
  * Top inset on each PDF page (mm). Balances print-safe headroom vs blank bands
  * above continuation slices in multi-block export.
  */
-const TOP_MARGIN_MM = 6;
+const TOP_MARGIN_MM = 12;
 
 /**
  * Bottom inset so the last band of each page is not flush to the sheet edge
