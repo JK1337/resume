@@ -27,6 +27,13 @@ const GAP_MM = 2;
 /** Extra space above each major section heading (Summary, Experience, …). */
 const SECTION_GAP_MM = 6;
 
+/**
+ * Extra space between each major section `<h2>` and the ruler line under it
+ * (`border-b` in the preview). Applied only during PDF capture via inline style;
+ * does not change `resumeStyles.ts` or on-screen preview after export.
+ */
+const SECTION_RULER_GAP_MM = 1.7;
+
 /** Float tolerance for height math. */
 const FIT_EPSILON_MM = 0.35;
 
@@ -57,6 +64,40 @@ function normalizeModulo(value: number, modulus: number): number {
 
 function canvasToJpegDataUrl(canvas: HTMLCanvasElement): string {
   return canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+}
+
+/**
+ * Adds SECTION_RULER_GAP_MM under the first `h2` in each PDF block (and every
+ * `h2` when falling back to full-root capture). Returns a function that
+ * restores previous inline `padding-bottom`.
+ */
+function applySectionRulerGapForPdfCapture(
+  root: HTMLElement,
+  gapMm: number
+): () => void {
+  const blocks = root.querySelectorAll<HTMLElement>("[data-pdf-block]");
+  const h2List: HTMLElement[] = [];
+  if (blocks.length > 0) {
+    for (const block of blocks) {
+      const h2 = block.querySelector<HTMLElement>("h2");
+      if (h2) h2List.push(h2);
+    }
+  } else {
+    h2List.push(...root.querySelectorAll<HTMLElement>("h2"));
+  }
+
+  const snapshots = h2List.map((el) => {
+    const prev = el.style.paddingBottom;
+    const computed = getComputedStyle(el).paddingBottom;
+    el.style.paddingBottom = `calc(${computed} + ${gapMm}mm)`;
+    return { el, prev };
+  });
+
+  return () => {
+    for (const { el, prev } of snapshots) {
+      el.style.paddingBottom = prev;
+    }
+  };
 }
 
 function addImageSlice(
@@ -196,37 +237,45 @@ export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
         backgroundColor: "#ffffff",
       } as const;
 
-      if (blocks.length === 0) {
-        const canvas = await html2canvas(root, html2canvasOpts);
-        const imgData = canvasToJpegDataUrl(canvas);
-        const imgHeightMm = (canvas.height * pageW) / canvas.width;
-        addTiledJpegToPdf(pdf, imgData, pageH, 0, pageW, imgHeightMm);
-      } else {
-        let yCursor = 0;
-        for (let i = 0; i < blocks.length; i++) {
-          const canvas = await html2canvas(blocks[i], html2canvasOpts);
+      const restoreRulerGap = applySectionRulerGapForPdfCapture(
+        root,
+        SECTION_RULER_GAP_MM
+      );
+      try {
+        if (blocks.length === 0) {
+          const canvas = await html2canvas(root, html2canvasOpts);
           const imgData = canvasToJpegDataUrl(canvas);
-          const imgHeightMm = (canvas.height * contentWmm) / canvas.width;
-          const gapBefore =
-            i === 0
-              ? 0
-              : blocks[i].hasAttribute("data-pdf-section-start")
-                ? SECTION_GAP_MM
-                : GAP_MM;
-          yCursor = appendBlockToPdf(
-            pdf,
-            imgData,
-            contentWmm,
-            imgHeightMm,
-            pageH,
-            SIDE_MARGIN_MM,
-            yCursor,
-            gapBefore
-          );
+          const imgHeightMm = (canvas.height * pageW) / canvas.width;
+          addTiledJpegToPdf(pdf, imgData, pageH, 0, pageW, imgHeightMm);
+        } else {
+          let yCursor = 0;
+          for (let i = 0; i < blocks.length; i++) {
+            const canvas = await html2canvas(blocks[i], html2canvasOpts);
+            const imgData = canvasToJpegDataUrl(canvas);
+            const imgHeightMm = (canvas.height * contentWmm) / canvas.width;
+            const gapBefore =
+              i === 0
+                ? 0
+                : blocks[i].hasAttribute("data-pdf-section-start")
+                  ? SECTION_GAP_MM
+                  : GAP_MM;
+            yCursor = appendBlockToPdf(
+              pdf,
+              imgData,
+              contentWmm,
+              imgHeightMm,
+              pageH,
+              SIDE_MARGIN_MM,
+              yCursor,
+              gapBefore
+            );
+          }
         }
-      }
 
-      pdf.save("resume.pdf");
+        pdf.save("resume.pdf");
+      } finally {
+        restoreRulerGap();
+      }
     } catch (e) {
       console.error(e);
       setError("Could not create PDF. Try again or use Print to PDF.");
