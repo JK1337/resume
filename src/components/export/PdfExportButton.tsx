@@ -21,8 +21,11 @@ const BOTTOM_MARGIN_MM = 9;
  */
 const SIDE_MARGIN_MM = 19.5;
 
-/** Space between consecutive blocks on the same PDF page. */
+/** Space between items inside the same section (e.g. jobs, schools). */
 const GAP_MM = 1;
+
+/** Extra space above each major section heading (Summary, Experience, …). */
+const SECTION_GAP_MM = 5;
 
 /** Float tolerance for height math. */
 const FIT_EPSILON_MM = 0.35;
@@ -106,7 +109,7 @@ function appendBlockToPdf(
   pageH: number,
   sideMm: number,
   yContentMm: number,
-  addGapBefore: boolean
+  gapBeforeMm: number
 ): number {
   const innerH = innerPageHeight(pageH);
 
@@ -114,8 +117,8 @@ function appendBlockToPdf(
   if (y >= innerH - FIT_EPSILON_MM) {
     pdf.addPage();
     y = 0;
-  } else if (addGapBefore && y > 0) {
-    y += GAP_MM;
+  } else if (gapBeforeMm > 0 && y > 0) {
+    y += gapBeforeMm;
   }
 
   const availableOnPage = innerH - y;
@@ -138,7 +141,7 @@ function appendBlockToPdf(
       pageH,
       sideMm,
       0,
-      false
+      0
     );
   }
 
@@ -204,6 +207,12 @@ export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
           const canvas = await html2canvas(blocks[i], html2canvasOpts);
           const imgData = canvasToJpegDataUrl(canvas);
           const imgHeightMm = (canvas.height * contentWmm) / canvas.width;
+          const gapBefore =
+            i === 0
+              ? 0
+              : blocks[i].hasAttribute("data-pdf-section-start")
+                ? SECTION_GAP_MM
+                : GAP_MM;
           yCursor = appendBlockToPdf(
             pdf,
             imgData,
@@ -212,7 +221,7 @@ export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
             pageH,
             SIDE_MARGIN_MM,
             yCursor,
-            i > 0
+            gapBefore
           );
         }
       }

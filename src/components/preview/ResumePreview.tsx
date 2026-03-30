@@ -41,7 +41,11 @@ export const ResumePreview = forwardRef<HTMLDivElement>(function ResumePreview(
         </header>
 
         {basicInfo.summary ? (
-          <section className="mt-4" data-pdf-block>
+          <section
+            className="mt-4"
+            data-pdf-block
+            data-pdf-section-start
+          >
             <h2 className={t.sectionTitle}>Summary</h2>
             <p className={t.summaryText}>{basicInfo.summary}</p>
           </section>
@@ -58,7 +62,11 @@ export const ResumePreview = forwardRef<HTMLDivElement>(function ResumePreview(
           <section className="mt-5">
             <ul className="space-y-4">
               {workExperience.map((job, idx) => (
-                <li key={job.id} data-pdf-block>
+                <li
+                  key={job.id}
+                  data-pdf-block
+                  {...(idx === 0 ? { "data-pdf-section-start": "" } : {})}
+                >
                   {idx === 0 ? (
                     <h2 className={`${t.sectionTitle} mb-2`}>Experience</h2>
                   ) : null}
@@ -105,7 +113,11 @@ export const ResumePreview = forwardRef<HTMLDivElement>(function ResumePreview(
           <section className="mt-5">
             <ul className="space-y-3">
               {education.map((edu, idx) => (
-                <li key={edu.id} data-pdf-block>
+                <li
+                  key={edu.id}
+                  data-pdf-block
+                  {...(idx === 0 ? { "data-pdf-section-start": "" } : {})}
+                >
                   {idx === 0 ? (
                     <h2 className={`${t.sectionTitle} mb-2`}>Education</h2>
                   ) : null}
@@ -134,7 +146,11 @@ export const ResumePreview = forwardRef<HTMLDivElement>(function ResumePreview(
         ) : null}
 
         {skills.some((s) => s.name.trim()) ? (
-          <section className="mt-5" data-pdf-block>
+          <section
+            className="mt-5"
+            data-pdf-block
+            data-pdf-section-start
+          >
             <h2 className={t.sectionTitle}>Skills</h2>
             <div className="space-y-3">
               {skillGroups.map(([category, names]) => (
