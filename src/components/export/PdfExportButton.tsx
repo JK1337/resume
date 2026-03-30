@@ -56,6 +56,11 @@ interface PdfExportButtonProps {
 function effectiveTopMarginMmForPdf(previewStyle: ResumeStyleId): number {
   return previewStyle === "executive" ? 0 : TOP_MARGIN_MM;
 }
+/*
+function effectiveBackgroundTitleForPdf(previewStyle: ResumeStyleId): string {
+  return previewStyle === "executive" ? "#0f172a" : "#ffffff";
+}
+*/
 
 function innerPageHeight(pageH: number, topMarginMm: number): number {
   return pageH - topMarginMm - BOTTOM_MARGIN_MM;
@@ -248,7 +253,14 @@ export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
         logging: false,
         backgroundColor: "#ffffff",
       } as const;
-
+/*
+      const html2canvasOptsDarkTitle = {
+        scale: RASTER_SCALE,
+        useCORS: true,
+        logging: false,
+        backgroundColor: effectiveBackgroundTitleForPdf(previewStyle),
+      } as const;
+*/
       const restoreRulerGap = applySectionRulerGapForPdfCapture(
         root,
         SECTION_RULER_GAP_MM
@@ -271,6 +283,10 @@ export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
           let yCursor = 0;
           for (let i = 0; i < blocks.length; i++) {
             const canvas = await html2canvas(blocks[i], html2canvasOpts);
+              /*i === 0 
+                ? await html2canvas(blocks[i], html2canvasOptsDarkTitle)
+                : await html2canvas(blocks[i], html2canvasOpts);
+                */
             const imgData = canvasToJpegDataUrl(canvas);
             const imgHeightMm = (canvas.height * contentWmm) / canvas.width;
             const gapBefore =
