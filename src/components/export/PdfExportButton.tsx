@@ -13,6 +13,11 @@ import { useResumeStore } from "../../store/resumeStore";
 const TOP_MARGIN_MM = 12;
 
 /**
+ * Space occupying the pdf title of the document
+ */
+//const TITLE_MARGIN_MM = 10;
+
+/**
  * Bottom inset so the last band of each page is not flush to the sheet edge
  * (avoids raster / JPEG clipping that showed as cut-off rows).
  */
@@ -23,6 +28,7 @@ const BOTTOM_MARGIN_MM = 5;
  * padding (~18mm) plus a little extra so edges are not clipped when scaling.
  */
 const SIDE_MARGIN_MM = 19.5;
+
 
 /** Space between items inside the same section (e.g. jobs, schools). */
 const GAP_MM = 0.5;
@@ -112,14 +118,43 @@ function applySectionRulerGapForPdfCapture(
   };
 }
 
+/** Slate-900 — Executive header; PDF side gutters for title block band only. */
+const EXECUTIVE_SIDE_GUTTER_RGB = [15, 23, 42] as const;
+
+/**
+ * Fills left/right page margins for a horizontal strip [yMm, yMm+hMm] so the
+ * title/header block can sit on slate gutters while body blocks stay on white.
+ */
+function fillExecutiveTitleSideGutters(
+  pdf: jsPDF,
+  pageW: number,
+  sideMm: number,
+  yMm: number,
+  hMm: number
+): void {
+  pdf.setFillColor(
+    EXECUTIVE_SIDE_GUTTER_RGB[0],
+    EXECUTIVE_SIDE_GUTTER_RGB[1],
+    EXECUTIVE_SIDE_GUTTER_RGB[2]
+  );
+  pdf.rect(0, yMm, sideMm, hMm, "F");
+  pdf.rect(pageW - sideMm, yMm, sideMm, hMm, "F");
+}
+
 function addImageSlice(
   pdf: jsPDF,
   imgData: string,
   xMm: number,
   wMm: number,
   yMm: number,
-  hMm: number
+  hMm: number,
+  pageW: number,
+  sideMm: number,
+  executiveTitleSideGutters: boolean
 ): void {
+  if (executiveTitleSideGutters) {
+    fillExecutiveTitleSideGutters(pdf, pageW, sideMm, yMm, hMm);
+  }
   pdf.addImage(imgData, "JPEG", xMm, yMm, wMm, hMm, undefined, "MEDIUM");
 }
 
@@ -131,22 +166,44 @@ function addTiledJpegToPdf(
   pdf: jsPDF,
   imgData: string,
   pageH: number,
+  pageW: number,
   xMm: number,
   wMm: number,
   imgHeightMm: number,
-  topMarginMm: number
+  topMarginMm: number,
+  sideMm: number
 ): void {
   const innerH = innerPageHeight(pageH, topMarginMm);
   let heightLeft = imgHeightMm;
   let yImg = topMarginMm;
 
-  addImageSlice(pdf, imgData, xMm, wMm, yImg, imgHeightMm);
+  addImageSlice(
+    pdf,
+    imgData,
+    xMm,
+    wMm,
+    yImg,
+    imgHeightMm,
+    pageW,
+    sideMm,
+    false
+  );
   heightLeft -= innerH;
 
   while (heightLeft > FIT_EPSILON_MM) {
     yImg -= innerH;
     pdf.addPage();
-    addImageSlice(pdf, imgData, xMm, wMm, yImg, imgHeightMm);
+    addImageSlice(
+      pdf,
+      imgData,
+      xMm,
+      wMm,
+      yImg,
+      imgHeightMm,
+      pageW,
+      sideMm,
+      false
+    );
     heightLeft -= innerH;
   }
 }
@@ -161,10 +218,12 @@ function appendBlockToPdf(
   contentWmm: number,
   imgHeightMm: number,
   pageH: number,
+  pageW: number,
   sideMm: number,
   yContentMm: number,
   gapBeforeMm: number,
-  topMarginMm: number
+  topMarginMm: number,
+  executiveTitleSideGutters: boolean
 ): number {
   const innerH = innerPageHeight(pageH, topMarginMm);
 
@@ -182,7 +241,17 @@ function appendBlockToPdf(
     FIT_EPSILON_MM + BLOCK_FIT_BUFFER_MM;
 
   if (imgHeightMm <= availableOnPage - slack) {
-    addImageSlice(pdf, imgData, sideMm, contentWmm, drawY, imgHeightMm);
+    addImageSlice(
+      pdf,
+      imgData,
+      sideMm,
+      contentWmm,
+      drawY,
+      imgHeightMm,
+      pageW,
+      sideMm,
+      executiveTitleSideGutters
+    );
     return y + imgHeightMm;
   }
 
@@ -194,23 +263,45 @@ function appendBlockToPdf(
       contentWmm,
       imgHeightMm,
       pageH,
+      pageW,
       sideMm,
       0,
       0,
-      topMarginMm
+      topMarginMm,
+      executiveTitleSideGutters
     );
   }
 
   let heightLeft = imgHeightMm;
   let yImg = topMarginMm;
 
-  addImageSlice(pdf, imgData, sideMm, contentWmm, yImg, imgHeightMm);
+  addImageSlice(
+    pdf,
+    imgData,
+    sideMm,
+    contentWmm,
+    yImg,
+    imgHeightMm,
+    pageW,
+    sideMm,
+    executiveTitleSideGutters
+  );
   heightLeft -= innerH;
 
   while (heightLeft > FIT_EPSILON_MM) {
     yImg -= innerH;
     pdf.addPage();
-    addImageSlice(pdf, imgData, sideMm, contentWmm, yImg, imgHeightMm);
+    addImageSlice(
+      pdf,
+      imgData,
+      sideMm,
+      contentWmm,
+      yImg,
+      imgHeightMm,
+      pageW,
+      sideMm,
+      executiveTitleSideGutters
+    );
     heightLeft -= innerH;
   }
 
@@ -253,14 +344,14 @@ export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
         logging: false,
         backgroundColor: "#ffffff",
       } as const;
-/*
-      const html2canvasOptsDarkTitle = {
+
+      const html2canvasOptsDark = {
         scale: RASTER_SCALE,
         useCORS: true,
         logging: false,
-        backgroundColor: effectiveBackgroundTitleForPdf(previewStyle),
+        backgroundColor: "#0f172a",
       } as const;
-*/
+
       const restoreRulerGap = applySectionRulerGapForPdfCapture(
         root,
         SECTION_RULER_GAP_MM
@@ -274,19 +365,56 @@ export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
             pdf,
             imgData,
             pageH,
+            pageW,
             0,
             pageW,
             imgHeightMm,
-            topMarginMm
+            topMarginMm,
+            SIDE_MARGIN_MM
           );
         } else {
           let yCursor = 0;
-          for (let i = 0; i < blocks.length; i++) {
+          const canvas = await html2canvas(blocks[0], html2canvasOptsDark);
+          const ctx = canvas.getContext("2d");
+          
+          
+          if (ctx) {
+            if(previewStyle === "executive") {
+              ctx.globalCompositeOperation = "destination-over";
+              ctx.fillStyle = '#0f172a';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            /*else if(previewStyle === "full dark mode"){
+              ctx.fillStyle = '#000000';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+            } 
+            else {
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }*/
+            ctx.globalCompositeOperation = "source-over";
+          }
+          const imgData = canvasToJpegDataUrl(canvas);
+          const imgHeightMm = (canvas.height * contentWmm) / canvas.width;
+          const gapBefore = (previewStyle === "executive")?0:blocks[0].hasAttribute("data-pdf-section-start")? SECTION_GAP_MM: GAP_MM;
+          
+          
+
+          yCursor = appendBlockToPdf(
+            pdf,
+            imgData,
+            contentWmm,
+            imgHeightMm,
+            pageH,
+            pageW,
+            SIDE_MARGIN_MM,
+            yCursor,
+            gapBefore,
+            topMarginMm,
+            previewStyle === "executive"
+          );
+          for (let i = 1; i < blocks.length; i++) {
             const canvas = await html2canvas(blocks[i], html2canvasOpts);
-              /*i === 0 
-                ? await html2canvas(blocks[i], html2canvasOptsDarkTitle)
-                : await html2canvas(blocks[i], html2canvasOpts);
-                */
             const imgData = canvasToJpegDataUrl(canvas);
             const imgHeightMm = (canvas.height * contentWmm) / canvas.width;
             const gapBefore =
@@ -301,10 +429,12 @@ export function PdfExportButton({ targetRef }: PdfExportButtonProps) {
               contentWmm,
               imgHeightMm,
               pageH,
+              pageW,
               SIDE_MARGIN_MM,
               yCursor,
               gapBefore,
-              topMarginMm
+              topMarginMm,
+              false
             );
           }
         }
